@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 有些环境（公司策略、内嵌浏览器、邮件客户端预览）会拦截内联脚本；
+     放开 CSP 让它能正常运行，同时保留对外部资源的限制 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+<title>万年历 · 节日与日程</title>
+<meta name="description" content="本地日历程序：内置节日与冷门国际日、农历与二十四节气、可添加备忘录与每年循环的生日纪念日。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+        <span class="brand-mark">历</span>
+        <span class="brand-text">万年历<small>节日 · 农历 · 日程</small></span>
+      </div>
+      <nav class="nav-arrows" aria-label="月份导航">
+        <button class="icon-btn" id="btnPrev" title="上一月 (←)">‹</button>
+        <button class="btn ghost" id="btnToday" title="回到今天 (T)">今天</button>
+        <button class="icon-btn" id="btnNext" title="下一月 (→)">›</button>
+      </nav>
+      <div class="title-block">
+        <h1 id="viewTitle">2025 年 1 月</h1>
+        <p id="viewSubtitle" class="muted"></p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="segmented" role="tablist" aria-label="视图切换">
+        <button class="seg" data-view="month" role="tab" aria-selected="true">月</button>
+        <button class="seg" data-view="year" role="tab" aria-selected="false">年</button>
+        <button class="seg" data-view="list" role="tab" aria-selected="false">列表</button>
+      </div>
+      <div class="search-wrap">
+        <input type="search" id="searchInput" placeholder="搜索日程 / 节日…" aria-label="搜索">
+      </div>
+      <button class="btn primary" id="btnAdd" title="新建日程 (N)">＋ 新建</button>
+      <button class="btn ghost" id="btnData" title="数据管理">数据</button>
+    </div>
+  </header>
+
+  <div class="body">
+    <main class="main" id="main">
+      <div class="weekdays" id="weekdays"></div>
+      <div class="grid" id="grid" role="grid" aria-label="月历"></div>
+      <div class="view-host" id="viewHost" hidden></div>
+      <section class="mobile-panel" id="mobilePanel"></section>
+    </main>
+
+    <aside class="sidebar" id="sidebar">
+      <section class="card today-card" id="todayCard"></section>
+      <section class="card">
+        <div class="card-head">
+          <h2>即将到来</h2>
+          <span class="muted small" id="upcomingCount"></span>
+        </div>
+        <div class="card-body" id="upcomingList"></div>
+      </section>
+      <section class="card">
+        <div class="card-head">
+          <h2 id="monthPanelTitle">本月节日与日程</h2>
+        </div>
+        <div class="card-body" id="monthPanel"></div>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span id="statusCount"></span>
+    <span class="dot">·</span>
+    <span id="statusHint">点击日期格子添加日程；拖动或使用 ← → 切换月份</span>
+    <span class="spacer"></span>
+    <span id="statusRange" class="muted"></span>
+  </footer>
+</div>
+
+<!-- 日程编辑弹窗 -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header class="modal-head">
+      <h2 id="modalTitle">新建日程</h2>
+      <button class="icon-btn" data-close="1" title="关闭 (Esc)">×</button>
+    </header>
+    <form id="eventForm" class="modal-body">
+      <input type="hidden" id="fId">
+      <label class="field">
+        <span class="label">标题 <em>*</em></span>
+        <input type="text" id="fTitle" required maxlength="60" placeholder="例如：小林生日 / 交房租 / 体检">
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="label">类型</span>
+          <select id="fCategory">
+            <option value="memo">备忘录</option>
+            <option value="birthday">生日</option>
+            <option value="anniversary">纪念日</option>
+            <option value="todo">待办</option>
+            <option value="holiday">自定义节日</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">日期类型</span>
+          <select id="fCalendar">
+            <option value="solar">公历</option>
+            <option value="lunar">农历</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="label">日期</span>
+          <input type="date" id="fDate" required>
+        </label>
+        <label class="field">
+          <span class="label">重复</span>
+          <select id="fRepeat">
+            <option value="none">仅此一次</option>
+            <option value="yearly">每年重复（生日/纪念日）</option>
+            <option value="monthly">每月重复</option>
+            <option value="weekly">每周重复</option>
+            <option value="lunarYearly">农历每年（农历生日）</option>
+            <option value="lunarMonthly">农历每月</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="hint" id="fPreview"></p>
+
+      <label class="field">
+        <span class="label">标签（逗号分隔）</span>
+        <input type="text" id="fTags" placeholder="家人, 重要">
+      </label>
+
+      <label class="field">
+        <span class="label">备注</span>
+        <textarea id="fNote" rows="3" placeholder="礼物想法、电话、地址…"></textarea>
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="label">颜色</span>
+          <input type="color" id="fColor" value="#4c8bf5" disabled>
+        </label>
+        <label class="field">
+          <span class="label">提前提醒</span>
+          <select id="fRemind">
+            <option value="0">不提醒</option>
+            <option value="1">提前 1 天</option>
+            <option value="3">提前 3 天</option>
+            <option value="7">提前 7 天</option>
+            <option value="14">提前 14 天</option>
+            <option value="30">提前 30 天</option>
+          </select>
+        </label>
+      </div>
+      <label class="switch" style="margin-top:-6px">
+        <input type="checkbox" id="fAutoColor" checked><span>跟随主题配色</span>
+      </label>
+
+      <div class="modal-foot">
+        <button type="button" class="btn danger ghost" id="btnDelete" hidden>删除</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" data-close="1">取消</button>
+        <button type="submit" class="btn primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 数据管理弹窗 -->
+<div class="modal" id="dataModal" hidden>
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
+    <header class="modal-head">
+      <h2 id="dataTitle">数据与设置</h2>
+      <button class="icon-btn" data-close="1" title="关闭">×</button>
+    </header>
+    <div class="modal-body">
+      <div class="settings-grid">
+        <label class="switch"><input type="checkbox" id="setLunar" checked><span>显示农历与节气</span></label>
+        <label class="switch"><input type="checkbox" id="setAlmanac" checked><span>显示黄历（黄道吉日 / 宜忌）</span></label>
+        <label class="switch"><input type="checkbox" id="setHistory" checked><span>显示「历史上的今天」</span></label>
+        <label class="switch"><input type="checkbox" id="setFestivals" checked><span>显示内置节日</span></label>
+        <label class="switch"><input type="checkbox" id="setRare" checked><span>显示冷门节日</span></label>
+        <label class="switch"><input type="checkbox" id="setWeekStart"><span>周一作为每周第一天</span></label>
+        <label class="switch"><input type="checkbox" id="setWeekNumbers"><span>显示周序号</span></label>
+        <label class="switch"><input type="checkbox" id="setDense"><span>紧凑显示</span></label>
+      </div>
+      <hr>
+      <h3>备份与迁移</h3>
+      <div class="btn-row">
+        <button class="btn" id="btnExport">导出 JSON 文件</button>
+        <button class="btn" id="btnExportCsv">导出 CSV</button>
+        <label class="btn" for="importFile">导入 JSON</label>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+        <button class="btn" id="btnDemo">载入示例数据</button>
+        <button class="btn danger ghost" id="btnClear">清空全部日程</button>
+      </div>
+      <p class="hint">数据只保存在本机浏览器（localStorage）。换设备时请用“导出 JSON”把文件带走。</p>
+      <hr>
+      <h3>节日库</h3>
+      <p class="hint" id="festivalStat"></p>
+      <div class="festival-search">
+        <input type="search" id="festivalQuery" placeholder="查节日，例如 小狗 / 湿地 / 冬至">
+      </div>
+      <div id="festivalResult" class="festival-result"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 某一天的详情弹窗 -->
+<div class="modal" id="dayModal" hidden>
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-card narrow" role="dialog" aria-modal="true" aria-labelledby="dayTitle">
+    <header class="modal-head">
+      <h2 id="dayTitle">日期详情</h2>
+      <button class="icon-btn" data-close="1" title="关闭">×</button>
+    </header>
+    <div class="modal-body" id="dayBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* 启动自检：放在所有脚本之前，且只能用 ES5 语法写，
+ * 这样即使旧浏览器不支持新语法，也能看到明确提示而不是一片空白。 */
+(function () {
+  function show(title, html) {
+    try {
+      if (document.getElementById('__bootmsg')) return;
+      var d = document.createElement('div');
+      d.id = '__bootmsg';
+      d.setAttribute('style', 'position:fixed;left:0;right:0;top:0;z-index:9999;background:#fff4f4;color:#7a1f1f;border-bottom:2px solid #d64545;padding:14px 18px;font:14px/1.7 system-ui,"Microsoft YaHei",sans-serif');
+      d.innerHTML = '<b>' + title + '</b><br>' + html;
+      document.body.appendChild(d);
+    } catch (e) { /* 连提示都做不出来就只能作罢 */ }
+  }
+
+  try {
+    if (!window.JSON || !document.addEventListener || !window.addEventListener) {
+      show('浏览器版本过旧', '本日历需要 IE9 以上的现代浏览器（推荐 Chrome / Edge / Firefox 最新版）。');
+      return;
+    }
+  } catch (e) {}
+
+  setTimeout(function () {
+    try {
+      var day = document.querySelector('#grid .day');
+      var cal = window.__calendar;
+      if (day && cal) return;                 // 正常启动，什么都不做
+      var detail = [];
+      if (!cal) detail.push('· 核心脚本没有执行完成（可能是浏览器拦截了本地脚本，或脚本中途出错）');
+      if (!day) detail.push('· 日历网格没有生成');
+      if (window.__calendarError) detail.push('· 捕获到的错误：<code>' + String(window.__calendarError) + '</code>');
+      show('页面没能正常启动', detail.join('<br>') +
+        '<br>可以试试：① 换用 Chrome / Edge / Firefox 打开；② 打开同目录下的 <code>calendar.html</code>（自包含单文件，不依赖外部脚本）；' +
+        '③ 在本目录执行 <code>python -m http.server 8000</code>，再访问 <code>http://localhost:8000/</code>。');
+    } catch (e) {}
+  }, 5000);
+})();
+</script>
+
+<script src="js/lunar.js"></script>
+<script src="js/festivals.js"></script>
+<script src="js/almanac.js"></script>
+<script src="js/history.js"></script>
+<script src="js/events.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

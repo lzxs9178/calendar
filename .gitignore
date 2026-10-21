@@ -1,0 +1,38 @@
+# ---- 依赖与构建 ----
+node_modules/
+.pnpm-store/
+pnpm-workspace.yaml
+
+# ---- 构建产物 / 调试产物（都能由脚本重新生成，不进版本库）----
+# 单文件版：calendar.html 是唯一入库的构建产物（供直接下载双击使用）
+calendar-standalone.html
+diagnose.html
+diagnose-selfcheck.html
+exe/*.exe
+exe/app/
+
+# 分享包（zip 与其中的 html 副本都不入库；发版时用 Releases 附件）
+*.zip
+share/calendar.html
+share/README.txt
+share/使用说明.txt
+
+# 「历史上的今天」构建过程中的中间数据（体积大、可重新生成）
+tools/tr/
+tools/history-pending.json
+tools/history-zh.json
+
+# 抓取原始数据的缓存（数 MB 的原始 JSON）
+tools/.history-cache.json
+
+# ---- 系统与编辑器 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# 本地推送辅助脚本（只在本机用，不属于项目）
+推送到GitHub.bat

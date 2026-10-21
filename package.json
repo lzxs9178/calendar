@@ -1,0 +1,33 @@
+{
+  "name": "calendar",
+  "version": "1.3.0",
+  "private": true,
+  "description": "万年历：可打包为 Windows exe 的离线日历程序 —— 每日节日（含冷门国际日）、农历与二十四节气、黄历（黄道吉日 + 每日宜忌）、历史上的今天（4702 条中文）、备忘录与每年循环的生日纪念日",
+  "scripts": {
+    "build": "node build-standalone.cjs",
+    "verify": "node tools/verify-files.cjs && node tools/verify-almanac.cjs && node tools/verify-history.cjs && node tools/verify-boot.cjs && node tools/verify-buttons.cjs && node tools/verify-boot-fallback.cjs && node tools/verify-boot-regression.cjs && node tools/verify-diagnose.cjs && node tools/verify-standalone.cjs && node tools/verify.cjs && node tools/verify-exe.cjs",
+    "verify:quick": "node tools/verify-files.cjs && node tools/verify-buttons.cjs",
+    "verify:files": "node tools/verify-files.cjs",
+    "verify:boot": "node tools/verify-boot.cjs",
+    "verify:buttons": "node tools/verify-buttons.cjs",
+    "verify:fallback": "node tools/verify-boot-fallback.cjs",
+    "verify:regression": "node tools/verify-boot-regression.cjs",
+    "verify:diagnose": "node tools/verify-diagnose.cjs",
+    "verify:standalone": "node tools/verify-standalone.cjs",
+    "verify:core": "node tools/verify.cjs",
+    "verify:render": "node tools/verify.cjs render",
+    "verify:almanac": "node tools/verify-almanac.cjs",
+    "verify:history": "node tools/verify-history.cjs",
+    "build:history": "node tools/build-history.cjs",
+    "build:exe": "node tools/build-exe.cjs",
+    "verify:exe": "node tools/verify-exe.cjs",
+    "verify:exe-window": "node tools/verify-exe-window.cjs",
+    "make:icon": "python -m tools.make-icon.py",
+    "make:preview": "python tools/make-preview.py"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2",
+    "solarlunar": "3.1.0"
+  },
+  "comment": "程序本体零依赖：直接双击 calendar.html 即可运行；打不开时双击 diagnose.html 生成自检报告。devDependencies 只用于 tools/ 下的自检脚本（需要 Node 18+）。"
+}

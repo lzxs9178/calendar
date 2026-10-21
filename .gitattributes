@@ -1,0 +1,16 @@
+# 统一换行符与文本属性：避免 Windows / macOS 协作时整文件 diff
+* text=auto eol=lf
+
+# 明确二进制，避免被当作文本处理
+*.exe   binary
+*.ico   binary
+*.zip   binary
+*.png   binary
+
+# 生成物：GitHub 语言统计时不计入源码
+docs/history.js              linguist-generated=true
+docs/app.js                  linguist-vendored=false
+calendar.html                linguist-generated=true
+calendar-standalone.html     linguist-generated=true
+diagnose.html                linguist-generated=true
+history.js                   linguist-generated=true

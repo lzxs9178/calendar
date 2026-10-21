@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2026 万年历项目贡献者
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------------------------------------------------------------
+
+关于第三方数据与算法：
+
+1. 农历压缩表（js/lunar.js 中的 lunarInfo）为流传多年的公开数据表，
+   本项目对其做了天文交叉校验并修正了 2060、2097 两处月长错误。
+
+2. 「历史上的今天」数据整理自 Wikipedia 各日期条目（通过
+   history.muffinlabs.com 提供的结构化接口），由本项目的
+   tools/build-history.cjs 抓取、筛选、翻译后生成。
+   Wikipedia 内容采用 CC BY-SA 许可，转载/再分发该数据时请保留
+   来源标注（界面与 README 中均已标注）。
+
+3. 二十四节气由 Meeus《Astronomical Algorithms》低精度太阳位置公式
+   计算，黄历部分依据公开通书规则实现，均为算法实现而非数据抄袭。
+
+4. 程序不使用任何第三方运行时依赖（浏览器端零依赖）。
+   仅 tools/ 下的自检脚本使用 jsdom（MIT）与 solarlunar（MIT）
+   作为测试对照，不参与程序运行。
