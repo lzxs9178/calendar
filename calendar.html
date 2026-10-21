@@ -3505,6 +3505,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
       });
       body.appendChild(hBox);
       body.appendChild(el('p', 'hint', '共 ' + hist.length + ' 条。数据来自 Wikipedia 日期条目（经 history.muffinlabs.com 整理），已剔除娱乐与体育类人物；中文为机器翻译，鼠标悬停可看英文原文。'));
+    } else if (state.settings.history && !HD) {
+      // 历史数据还在后台加载
+      body.appendChild(el('div', 'section-label', '历史上的今天'));
+      body.appendChild(el('p', 'hint', '历史数据正在加载…（约 843 KB，首次打开需要几秒）'));
     }
 
     var evs = userEventsOn(key);
@@ -3984,13 +3988,57 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
     }
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', safeBoot);
-  else safeBoot();
+  /* ---------------- 历史数据异步加载 ----------------
+   * history.js 有 843 KB，若同步加载会把首屏拖到十几秒（尤其在慢网络下）。
+   * 这里改为首屏渲染完成后再异步拉取，拉到后自动刷新。
+   * 单文件版（calendar.html）里数据已内联，window.HistoryDB 存在，直接返回不发请求。
+   */
+  function scriptBase() {
+    var list = document.getElementsByTagName('script');
+    for (var i = list.length - 1; i >= 0; i--) {
+      var src = list[i].getAttribute('src') || '';
+      if (/app\.js(\?|$)/.test(src)) return src.replace(/app\.js(\?.*)?$/, '');
+    }
+    return 'js/';
+  }
+
+  function loadHistoryAsync() {
+    if (window.HistoryDB) { HD = window.HistoryDB; return; }
+    if (window.__historyLoading) return;
+    window.__historyLoading = true;
+
+    var s = document.createElement('script');
+    s.src = scriptBase() + 'history.js';
+    s.async = true;
+    s.onload = function () {
+      window.__historyLoading = false;
+      HD = window.HistoryDB || null;
+      try {
+        render();
+        if (state.selected) openDay(state.selected);
+      } catch (e) { /* 刷新失败不影响主界面 */ }
+    };
+    s.onerror = function () {
+      window.__historyLoading = false;
+      if (window.console && console.warn) console.warn('历史数据加载失败，其他功能不受影响');
+    };
+    (document.head || document.documentElement).appendChild(s);
+  }
+
+  function onReady() {
+    safeBoot();
+    loadHistoryAsync();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady);
+  else onReady();
 
   // 暴露给调试
   window.__calendar = { state: state, render: render, ES: ES, L: L, DB: DB, storage: storage };
 })();
 
 </script>
+<!-- 注意：history.js（843 KB）不在这里同步加载，由 app.js 异步拉取以加快首屏；
+     单文件版 calendar.html 里它仍会被内联。 -->
 </body>
 </html>

@@ -271,8 +271,9 @@
 <script src="js/lunar.js"></script>
 <script src="js/festivals.js"></script>
 <script src="js/almanac.js"></script>
-<script src="js/history.js"></script>
 <script src="js/events.js"></script>
 <script src="js/app.js"></script>
+<!-- 注意：history.js（843 KB）不在这里同步加载，由 app.js 异步拉取以加快首屏；
+     单文件版 calendar.html 里它仍会被内联。 -->
 </body>
 </html>
